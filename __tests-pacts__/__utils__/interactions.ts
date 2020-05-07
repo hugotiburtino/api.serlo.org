@@ -1,5 +1,9 @@
 import { Matchers } from '@pact-foundation/pact'
 
+import {
+  NotificationEventPayload,
+  NotificationsPayload,
+} from '../../src/graphql/schema'
 import { License } from '../../src/graphql/schema/license'
 import {
   AliasPayload,
@@ -524,6 +528,37 @@ export function addUuidInteraction<
       id,
       discriminator,
       ...data,
+    },
+  })
+}
+
+export function addNotificationsInteraction(payload: NotificationsPayload) {
+  return addJsonInteraction({
+    name: `fetch notifications of user ${payload.user}`,
+    given: `${payload.user} is an user`,
+    path: `/api/notifications/${payload.user}`,
+    body: {
+      user: payload.user,
+      notifications:
+        payload.notifications.length > 0
+          ? Matchers.eachLike(Matchers.like(payload.notifications[0]))
+          : [],
+    },
+  })
+}
+
+export function addNotificationEventInteraction(
+  event: NotificationEventPayload
+) {
+  return addJsonInteraction({
+    name: `render event ${event.id}`,
+    given: `${event.id} is an event`,
+    path: `/api/event/${event.id}`,
+    body: {
+      id: event.id,
+      type: Matchers.string(event.type),
+      payload: Matchers.string(event.payload),
+      createdAt: Matchers.iso8601DateTime(event.createdAt),
     },
   })
 }

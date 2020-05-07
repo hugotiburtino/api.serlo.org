@@ -24,6 +24,7 @@ import jwt from 'jsonwebtoken'
 import * as R from 'ramda'
 
 import { Environment } from '../environment'
+import { NotificationEventPayload, NotificationsPayload } from '../schema'
 import { Instance } from '../schema/instance'
 import { License } from '../schema/license'
 import { Service } from '../schema/types'
@@ -404,6 +405,54 @@ export class SerloDataSource extends RESTDataSource {
       discriminator: 'entityRevision',
       type: 'video',
     })
+  }
+
+  public async getNotifications({
+    user,
+    bypassCache = false,
+  }: {
+    user: number
+    bypassCache?: boolean
+  }) {
+    return this.cacheAwareGet({
+      path: `/api/notifications/${user}`,
+      bypassCache,
+      setter: 'setNotifications',
+    })
+  }
+
+  public async setNotifications(notifications: NotificationsPayload) {
+    const cacheKey = this.getCacheKey(
+      `/api/notifications/${notifications.user}`
+    )
+    await this.environment.cache.set(
+      cacheKey,
+      this.environment.serializer.serialize(notifications)
+    )
+    return notifications
+  }
+
+  public async getNotificationEvent({
+    id,
+    bypassCache = false,
+  }: {
+    id: number
+    bypassCache?: boolean
+  }) {
+    return this.cacheAwareGet({
+      path: `/api/event/${id}`,
+      bypassCache,
+      setter: 'setNotificationEvent',
+    })
+  }
+
+  public async setNotificationEvent(payload: NotificationEventPayload) {
+    const cacheKey = this.getCacheKey(`/api/event/${payload.id}`)
+    await this.environment.cache.set(
+      cacheKey,
+      this.environment.serializer.serialize(payload)
+    )
+    return payload
   }
 
   private async cacheAwareGet<K extends keyof SerloDataSource>({
