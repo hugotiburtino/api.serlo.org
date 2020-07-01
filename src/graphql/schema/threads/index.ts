@@ -20,9 +20,13 @@
  * @link      https://github.com/serlo-org/api.serlo.org for the canonical source repository
  */
 import { Schema } from '../utils'
+import { resolvers } from './resolvers'
 import { typeDefs } from './type-defs'
 
 export * from './types'
 export * from './utils'
 
-export const threadsSchema = new Schema({}, [typeDefs])
+export const threadsSchema = new Schema(
+  (resolvers as unknown) as Schema['resolvers'],
+  [typeDefs]
+)

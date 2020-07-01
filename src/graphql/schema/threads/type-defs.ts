@@ -29,6 +29,25 @@ export const typeDefs = gql`
 
   type Thread {
     id: Int!
-    # ...
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    title: String!
+    archived: Boolean!
+    trashed: Boolean!
+    object: Uuid!
+    comments: CommentsResult!
+  }
+
+  type CommentsResult {
+    totalCount: Int!
+    nodes: [Comment!]!
+  }
+
+  type Comment {
+    id: Int!
+    content: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    author: User!
   }
 `

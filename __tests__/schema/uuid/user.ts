@@ -24,7 +24,7 @@ import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
 import { user } from '../../../__fixtures__/uuid'
-import { ThreadsPayload } from '../../../src/graphql/schema'
+import { ThreadsPayload, ThreadPayload } from '../../../src/graphql/schema'
 import { assertSuccessfulGraphQLQuery } from '../../__utils__/assertions'
 import { createTestClient } from '../../__utils__/test-client'
 
@@ -54,7 +54,21 @@ const server = setupServer(
         ctx.status(200),
         ctx.json({
           id: 1,
-        })
+          createdAt: '2014-03-01T20:45:56Z',
+          updatedAt: '2014-03-01T20:45:56Z',
+          title: 'title',
+          archived: false,
+          trashed: false,
+          comments: [
+            {
+              id: 1,
+              content: 'content',
+              createdAt: '2014-03-01T20:45:56Z',
+              updatedAt: '2014-03-01T20:45:56Z',
+              authorId: user.id,
+            },
+          ],
+        } as ThreadPayload)
       )
     }
   )
@@ -116,6 +130,30 @@ test('user (w/ threads)', async () => {
               totalCount
               nodes {
                 id
+                updatedAt
+                createdAt
+                title
+                archived
+                trashed
+                object {
+                  ... on User {
+                    id
+                    username
+                  }
+                }
+                comments {
+                  totalCount
+                  nodes {
+                    id
+                    content
+                    updatedAt
+                    createdAt
+                    author {
+                      id
+                      username
+                    }
+                  }
+                }
               }
             }
           }
@@ -132,6 +170,30 @@ test('user (w/ threads)', async () => {
           nodes: [
             {
               id: 1,
+              updatedAt: '2014-03-01T20:45:56Z',
+              createdAt: '2014-03-01T20:45:56Z',
+              title: 'title',
+              archived: false,
+              trashed: false,
+              object: {
+                id: user.id,
+                username: user.username,
+              },
+              comments: {
+                totalCount: 1,
+                nodes: [
+                  {
+                    id: 1,
+                    content: 'content',
+                    updatedAt: '2014-03-01T20:45:56Z',
+                    createdAt: '2014-03-01T20:45:56Z',
+                    author: {
+                      id: user.id,
+                      username: user.username,
+                    },
+                  },
+                ],
+              },
             },
           ],
         },
