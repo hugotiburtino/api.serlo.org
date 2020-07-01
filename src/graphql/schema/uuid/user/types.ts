@@ -20,6 +20,7 @@
  * @link      https://github.com/serlo-org/api.serlo.org for the canonical source repository
  */
 import { DateTime } from '../../date-time'
+import { ThreadsResolver } from '../../threads'
 import { MutationResolver } from '../../types'
 import { DiscriminatorType, Uuid, UuidPayload } from '../abstract-uuid'
 
@@ -41,5 +42,8 @@ export interface UserPayload extends UuidPayload {
 export interface UserResolvers {
   Mutation: {
     _setUser: MutationResolver<UserPayload>
+  }
+  User: {
+    threads: ThreadsResolver<User>
   }
 }

@@ -3,6 +3,7 @@ import { ForbiddenError, gql } from 'apollo-server'
 import { DateTime } from '../date-time'
 import { Instance } from '../instance'
 import { License } from '../license'
+import { Threads, createThreadsResolver } from '../threads'
 import { Service, Context } from '../types'
 import { requestsOnlyFields, Schema } from '../utils'
 import { DiscriminatorType, Uuid, UuidPayload } from './abstract-uuid'
@@ -65,6 +66,11 @@ pageSchema.addResolver<Page, unknown, Partial<License>>(
     return dataSources.serlo.getLicense(partialLicense)
   }
 )
+pageSchema.addResolver<Page, never, Threads>(
+  'Page',
+  'threads',
+  createThreadsResolver()
+)
 pageSchema.addTypeDef(gql`
   """
   Represents a Serlo.org page. A \`Page\` is a repository containing \`PageRevision\`s, is tied to an \`Instance\`,
@@ -96,6 +102,7 @@ pageSchema.addTypeDef(gql`
     """
     currentRevision: PageRevision
     navigation: Navigation
+    threads: ThreadsResult!
   }
 `)
 

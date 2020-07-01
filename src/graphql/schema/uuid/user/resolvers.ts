@@ -21,6 +21,7 @@
  */
 import { ForbiddenError } from 'apollo-server'
 
+import { createThreadsResolver } from '../../threads'
 import { Service } from '../../types'
 import { UserResolvers } from './types'
 
@@ -34,5 +35,8 @@ export const resolvers: UserResolvers = {
       }
       await dataSources.serlo.setUser(payload)
     },
+  },
+  User: {
+    threads: createThreadsResolver(),
   },
 }

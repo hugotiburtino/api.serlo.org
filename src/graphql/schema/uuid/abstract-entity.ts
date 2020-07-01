@@ -25,6 +25,7 @@ import { SerloDataSource } from '../../data-sources/serlo'
 import { DateTime } from '../date-time'
 import { Instance } from '../instance'
 import { License } from '../license'
+import { Threads, createThreadsResolver } from '../threads'
 import { Service } from '../types'
 import { requestsOnlyFields, Schema } from '../utils'
 import { Uuid, UuidPayload } from './abstract-uuid'
@@ -111,6 +112,7 @@ abstractEntitySchema.addTypeDef(gql`
     The \`License\` of the entity
     """
     license: License!
+    threads: ThreadsResult!
   }
 `)
 export interface EntityRevisionPayload extends UuidPayload {
@@ -186,6 +188,7 @@ export function addEntityResolvers<
       date: DateTime!
       license: License!
       currentRevision: ${entityRevisionType}
+      threads: ThreadsResult!
       ${entityFields}
     }
   `)
@@ -213,7 +216,11 @@ export function addEntityResolvers<
       return dataSources.serlo.getLicense(partialLicense)
     }
   )
-
+  schema.addResolver<E, never, Threads>(
+    entityType,
+    'threads',
+    createThreadsResolver()
+  )
   schema.addTypeDef(gql`
     type ${entityRevisionType} implements Uuid & EntityRevision {
       id: Int!

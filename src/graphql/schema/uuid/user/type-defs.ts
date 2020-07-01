@@ -29,6 +29,7 @@ export const typeDefs = gql`
     date: DateTime!
     lastLogin: DateTime
     description: String
+    threads: ThreadsResult!
   }
 
   extend type Mutation {

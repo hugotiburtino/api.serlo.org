@@ -24,6 +24,7 @@ import jwt from 'jsonwebtoken'
 import * as R from 'ramda'
 
 import { Environment } from '../environment'
+import { ThreadsPayload, ThreadPayload } from '../schema'
 import { Instance } from '../schema/instance'
 import { License } from '../schema/license'
 import { Service } from '../schema/types'
@@ -252,7 +253,11 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setApplet(applet: AppletPayload) {
-    return this.setUuid({ ...applet, discriminator: 'entity', type: 'applet' })
+    return this.setUuid({
+      ...applet,
+      discriminator: 'entity',
+      type: 'applet',
+    })
   }
 
   public async setAppletRevision(appletRevision: AppletRevisionPayload) {
@@ -280,7 +285,11 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setCourse(course: CoursePayload) {
-    return this.setUuid({ ...course, discriminator: 'entity', type: 'course' })
+    return this.setUuid({
+      ...course,
+      discriminator: 'entity',
+      type: 'course',
+    })
   }
 
   public async setCourseRevision(courseRevision: CourseRevisionPayload) {
@@ -310,7 +319,11 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setEvent(event: EventPayload) {
-    return this.setUuid({ ...event, discriminator: 'entity', type: 'event' })
+    return this.setUuid({
+      ...event,
+      discriminator: 'entity',
+      type: 'event',
+    })
   }
 
   public async setEventRevision(eventRevision: EventRevisionPayload) {
@@ -378,7 +391,10 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setPageRevision(pageRevision: PageRevisionPayload) {
-    return this.setUuid({ ...pageRevision, discriminator: 'pageRevision' })
+    return this.setUuid({
+      ...pageRevision,
+      discriminator: 'pageRevision',
+    })
   }
 
   public async setSolution(solution: SolutionPayload) {
@@ -398,7 +414,10 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setTaxonomyTerm(taxonomyTerm: TaxonomyTermPayload) {
-    return this.setUuid({ ...taxonomyTerm, discriminator: 'taxonomyTerm' })
+    return this.setUuid({
+      ...taxonomyTerm,
+      discriminator: 'taxonomyTerm',
+    })
   }
 
   public async setUser(user: UserPayload) {
@@ -406,7 +425,11 @@ export class SerloDataSource extends RESTDataSource {
   }
 
   public async setVideo(video: VideoPayload) {
-    return this.setUuid({ ...video, discriminator: 'entity', type: 'video' })
+    return this.setUuid({
+      ...video,
+      discriminator: 'entity',
+      type: 'video',
+    })
   }
 
   public async setVideoRevision(videoRevision: VideoRevisionPayload) {
@@ -415,6 +438,38 @@ export class SerloDataSource extends RESTDataSource {
       discriminator: 'entityRevision',
       type: 'video',
     })
+  }
+
+  public async getThreads({ id }: { id: number }): Promise<ThreadsPayload> {
+    return this.cacheAwareGet({
+      path: `/api/threads/${id}`,
+      setter: 'setThreads',
+    })
+  }
+
+  public async getThread({ id }: { id: number }): Promise<ThreadPayload> {
+    return this.cacheAwareGet({
+      path: `/api/thread/${id}`,
+      setter: 'setThread',
+    })
+  }
+
+  public async setThreads(threads: ThreadsPayload): Promise<ThreadsPayload> {
+    const cacheKey = this.getCacheKey(`/api/threads/${threads.objectId}`)
+    await this.environment.cache.set(
+      cacheKey,
+      this.environment.serializer.serialize(threads)
+    )
+    return threads
+  }
+
+  public async setThread(thread: ThreadPayload): Promise<ThreadPayload> {
+    const cacheKey = this.getCacheKey(`/api/thread/${thread.id}`)
+    await this.environment.cache.set(
+      cacheKey,
+      this.environment.serializer.serialize(thread)
+    )
+    return thread
   }
 
   private async cacheAwareGet<
@@ -443,17 +498,6 @@ export class SerloDataSource extends RESTDataSource {
       issuer: 'api.serlo.org',
     })
 
-    // const data = (await (process.env.NODE_ENV === 'test'
-    //   ? super.get(`http://localhost:9009${path}`)
-    //   : super.get(
-    //       `http://${instance}.${process.env.SERLO_ORG_HOST}${path}`,
-    //       {},
-    //       {
-    //         headers: {
-    //           Authorization: `Serlo Service=${token}`,
-    //         },
-    //       }
-    //     ))) as unknown
     const data = (await super.get(
       `http://${instance}.${process.env.SERLO_ORG_HOST}${path}`,
       {},
