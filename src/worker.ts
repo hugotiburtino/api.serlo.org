@@ -1,8 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request'
 import { Service } from './graphql/schema/types'
-import { ApolloServer } from 'apollo-server-express'
-import { graphql, rest } from 'msw'
-import { GraphQLRequest } from 'apollo-server-types'
 
 export default class CacheWorker {
   private grahQLClient: GraphQLClient
@@ -26,7 +23,7 @@ export default class CacheWorker {
   }) {
     this.grahQLClient = new GraphQLClient(apiEndpoint, {
       headers: {
-        authorization: `Bearer`, // ${}`,
+        authorization: `Bearer ...`,
       },
     })
   }
@@ -38,7 +35,7 @@ export default class CacheWorker {
         this.cursor = data._cacheKeys.pageInfo.endCursor
         this.queryLiteral = `{ _cacheKeys (first: 5, after: "${this.cursor}") { edges { cursor node } nodes totalCount  pageInfo { hasNextPage hasPreviousPage startCursor endCursor } } }`
         thereIsNextPage = data._cacheKeys.pageInfo.hasNextPage
-        console.log('data: ', data) //data._cacheKeys.nodes
+        console.log('data: ', data)
         let mutation = gql`
           mutation {
             _updateCache(keys: ["de.serlo.org/api/uuid"]) { }

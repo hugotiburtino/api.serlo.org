@@ -8,29 +8,7 @@ import { Service } from '../src/graphql/schema/types'
 
 const cache = createInMemoryCache()
 
-const mockKeysValues: Map<string, string> = new Map([
-  ['uuid', 'value1'],
-  ['license', 'value1'],
-  ['authors', 'value1'],
-  ['ble', 'value1'],
-  ['foo', 'value1'],
-  ['bar.fuss', 'value1'],
-  ['exam', 'value1'],
-  ['map', 'value1'],
-  ['blablabla', 'value1'],
-  ['blebleble', 'value1'],
-  ['eleven', 'value1'],
-  ['twelve', 'value1'],
-  ['thirteen', 'value1'],
-  ['14', 'value1'],
-  ['15', 'value1'],
-  ['16', 'value1'],
-  ['17', 'value1'],
-  ['18', 'value1'],
-  ['19', 'value1'],
-  ['20', 'value1'],
-  ['21', 'value1'],
-])
+const mockKeysValues = new Map([...Array(25).keys()].map((x) => ['key'+x, 'value'+x]))
 
 let worker: CacheWorker
 
@@ -55,23 +33,18 @@ beforeEach(async () => {
   const serloApi = graphql.link('https://api.serlo.org/graphql')
 
   global.server.use(
-    // rest.post('https://api.serlo.org/graphql', async (req, res, ctx) => {
-    //   // console.log(req)
-    //   return res(
-    //     ctx.json(
-    //       await server.executeOperation({
-    //         query: worker.queryLiteral,
-    //       } as GraphQLRequest)
-    //     )
-    //   )
-    // }),
-    // rest.get(
-    //   `http://de.${process.env.SERLO_ORG_HOST}/api/${[...mockKeysValues.keys()][0]}`,
-    //   (req, res, ctx) => {
-    //     return res(ctx.status(200), ctx.json(mockKeysValues.get('uuid')! as any))
-    //   }
-    // ),
-    serloApi.query('nlo', async(req, res, ctx) =>{
+/*  // this one works as expected
+    rest.post('https://api.serlo.org/graphql', async (req, res, ctx) => {
+      // console.log(req)
+      return res(
+        ctx.json(
+          await server.executeOperation({
+            query: worker.queryLiteral,
+          } as GraphQLRequest)
+        )
+      )
+    }), */
+    serloApi.query('_cacheKeys', async(req, res, ctx) =>{
       return res(
         ctx.data(
           await server.executeOperation({
@@ -85,7 +58,6 @@ beforeEach(async () => {
 
 describe('Update-cache worker', () => {
   test('updates the whole cache', async () => {
-    //console.log('cache.get(mockKeysValues.get: ', await cache.get(mockKeysValues.get('de.serlo.org/api/uuid')!))
     await worker.updateWholeCache()
   })
 })
