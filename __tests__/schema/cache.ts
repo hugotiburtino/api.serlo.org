@@ -20,14 +20,13 @@
  * @link      https://github.com/serlo-org/api.serlo.org for the canonical source repository
  */
 
-import { isNone, isSome } from 'fp-ts/lib/Option'
+import { option } from 'fp-ts'
 import { rest } from 'msw'
 
 import {
   createCacheKeysQuery,
   createRemoveCacheMutation,
   createSetCacheMutation,
-  variables,
   createUpdateCacheMutation,
 } from '../../__fixtures__'
 import { MajorDimension } from '../../src/graphql/data-sources/google-spreadsheet-api'
@@ -41,7 +40,7 @@ import {
 } from '../__utils__'
 
 const mockSpreadSheetData = {
-  spreadsheetId: '1qpyC0XzvTcKT6EISywvqESX3A0MwQoFDE8p_Bll4hps',
+  spreadsheetId: '1qpyC0XzvTcKT6EISywvqESX3A0MwQoFDE8p-Bll4hps',
   range: 'sheet1!A:A',
   majorDimension: MajorDimension.Columns,
   apiKey: 'very-secure-secret',
@@ -52,24 +51,37 @@ const mockSpreadSheetData = {
   },
 }
 
+const testVars = [
+  {
+    key: 'foo',
+    value: { anything: 'bar' },
+  },
+  {
+    key: 'bar.fuss',
+    value: ['whatever'],
+  },
+]
+
+const fakeCacheKeys = [testVars[0].key, testVars[1].key, 'uuid']
+
 beforeEach(() => {
   global.server.use(
     rest.get(
       `http://de.${process.env.SERLO_ORG_HOST}/api/cache-keys`,
       (req, res, ctx) => {
-        return res(ctx.status(200), ctx.json(['foo', 'bar', 'boo']))
+        return res(ctx.status(200), ctx.json(fakeCacheKeys))
       }
     ),
     rest.get(
-      `http://de.${process.env.SERLO_ORG_HOST}/api/foo`,
+      `http://de.${process.env.SERLO_ORG_HOST}/api/${testVars[0].key}`,
       (req, res, ctx) => {
-        return res(ctx.status(200), ctx.json(['bla']))
+        return res(ctx.status(200), ctx.json(testVars[0].value))
       }
     ),
     rest.get(
-      `http://en.${process.env.SERLO_ORG_HOST}/api/bar`,
+      `http://en.${process.env.SERLO_ORG_HOST}/api/${testVars[1].key}`,
       (req, res, ctx) => {
-        return res(ctx.status(200), ctx.json(['ble']))
+        return res(ctx.status(200), ctx.json(testVars[1].value))
       }
     ),
     createSpreadsheetHandler(mockSpreadSheetData)
@@ -85,7 +97,7 @@ test('_cacheKeys', async () => {
     ...createCacheKeysQuery(),
     data: {
       _cacheKeys: {
-        nodes: ['foo', 'bar', 'boo'],
+        nodes: fakeCacheKeys,
         totalCount: 3,
       },
     },
@@ -101,7 +113,7 @@ test('_setCache (forbidden)', async () => {
 
   await assertFailingGraphQLMutation(
     {
-      ...createSetCacheMutation(variables),
+      ...createSetCacheMutation(testVars[0]),
       client,
     },
     (errors) => {
@@ -117,12 +129,14 @@ test('_setCache (authenticated)', async () => {
   })
 
   await assertSuccessfulGraphQLMutation({
-    ...createSetCacheMutation(variables),
+    ...createSetCacheMutation(testVars[0]),
     client,
   })
 
-  const cachedValue = await cache.get(variables.key)
-  expect(isSome(cachedValue) && cachedValue.value).toEqual(variables.value)
+  const cachedValue = await cache.get(testVars[0].key)
+  expect(option.isSome(cachedValue) && cachedValue.value).toEqual(
+    testVars[0].value
+  )
 })
 
 test('_removeCache (forbidden)', async () => {
@@ -132,7 +146,7 @@ test('_removeCache (forbidden)', async () => {
   })
   await assertFailingGraphQLMutation(
     {
-      ...createRemoveCacheMutation(variables),
+      ...createRemoveCacheMutation(testVars[0]),
       client,
     },
     (errors) => {
@@ -148,17 +162,17 @@ test('_removeCache (authenticated)', async () => {
   })
 
   await assertSuccessfulGraphQLMutation({
-    ...createRemoveCacheMutation(variables),
+    ...createRemoveCacheMutation(testVars[0]),
     client,
   })
 
-  const cachedValue = await cache.get(variables.key)
-  expect(isNone(cachedValue)).toBe(true)
+  const cachedValue = await cache.get(testVars[0].key)
+  expect(option.isNone(cachedValue)).toBe(true)
 })
 
 test('_updateCache (forbidden)', async () => {
   const { client } = createTestClient({
-    service: Service.Playground,
+    service: Service.SerloCloudflareWorker,
     user: null,
   })
   await assertFailingGraphQLMutation(
@@ -178,7 +192,10 @@ test('_updateCache *serlo.org* (authenticated)', async () => {
     user: null,
   })
 
-  const keys = ['de.serlo.org/api/foo', 'en.serlo.org/api/bar']
+  const keys = [
+    `de.serlo.org/api/${testVars[0].key}`,
+    `en.serlo.org/api/${testVars[1].key}`,
+  ]
 
   const cachedValueBeforeUpdate1 = await cache.get(keys[0])
   const cachedValueBeforeUpdate2 = await cache.get(keys[1])
@@ -189,8 +206,10 @@ test('_updateCache *serlo.org* (authenticated)', async () => {
   })
   const cachedValueAfterUpdate1 = await cache.get(keys[0])
   expect(cachedValueBeforeUpdate1).not.toEqual(cachedValueAfterUpdate1)
+  expect(cachedValueAfterUpdate1).toEqual(option.some(testVars[0].value))
   const cachedValueAfterUpdate2 = await cache.get(keys[1])
   expect(cachedValueBeforeUpdate2).not.toEqual(cachedValueAfterUpdate2)
+  expect(cachedValueAfterUpdate2).toEqual(option.some(testVars[1].value))
 })
 
 test('_updateCache spreadsheet-* (authenticated)', async () => {
@@ -199,8 +218,9 @@ test('_updateCache spreadsheet-* (authenticated)', async () => {
     user: null,
   })
 
+  const mock = mockSpreadSheetData
   const keys = [
-    'spreadsheet-1qpyC0XzvTcKT6EISywvqESX3A0MwQoFDE8p_Bll4hps-sheet1!A:A-COLUMNS',
+    `spreadsheet-${mock.spreadsheetId}-${mock.range}-${mock.majorDimension}`,
   ]
 
   const cachedValueBeforeUpdate = await cache.get(keys[0])
@@ -211,4 +231,5 @@ test('_updateCache spreadsheet-* (authenticated)', async () => {
   })
   const cachedValueAfterUpdate = await cache.get(keys[0])
   expect(cachedValueBeforeUpdate).not.toEqual(cachedValueAfterUpdate)
+  expect(cachedValueAfterUpdate).toEqual(option.some(mock.body.values))
 })
